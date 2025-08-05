@@ -2,10 +2,12 @@ const redButton = document.getElementById('red-btn');
 const blueButton = document.getElementById('blue-btn');
 const resultDiv = document.getElementById('result');
 
+const apiUrl = 'https://red-vs-blue-basic.onrender.com/api';
+
 async function makeRequest(color) {
     try {
         console.log(`Making ${color} request...`);
-        const response = await fetch(`http://localhost:3000/api/${color}`, {
+        const response = await fetch(`${apiUrl}/${color}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
