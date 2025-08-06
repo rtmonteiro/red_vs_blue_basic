@@ -40,6 +40,8 @@ class DatabaseConfig {
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
       })
 
+      console.log(this.pool);
+
       // Test the connection
       const client = await this.pool.connect()
       await client.query('SELECT NOW()')
