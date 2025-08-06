@@ -1,8 +1,37 @@
+const path = require('path')
+
+// Load environment-specific configuration
+const nodeEnv = process.env.NODE_ENV || 'development'
+const envFile = `.env.${nodeEnv}`
+const envPath = path.resolve(__dirname, envFile)
+
+// Try to load environment-specific file first, fallback to .env
+try {
+  require('dotenv').config({ path: envPath })
+  console.log(`🔧 Loaded environment configuration from ${envFile}`)
+} catch (error) {
+  // Fallback to default .env file
+  require('dotenv').config()
+  console.log('🔧 Loaded default environment configuration from .env')
+}
+
 const express = require('express')
-const WebSocket = require('ws')
 const http = require('http')
+const dbConfig = require('./config/database')
+const MigrationManager = require('./database/migrations')
+const WebSocketManager = require('./websocket/WebSocketManager')
+const apiRoutes = require('./routes/api')
+const { 
+  errorHandler, 
+  notFound, 
+  requestLogger 
+} = require('./middleware/errorHandler')
+
 const app = express()
 const port = process.env.PORT || 3000
+
+// Global middleware
+app.use(requestLogger)
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -17,84 +46,147 @@ app.use((req, res, next) => {
   }
 })
 
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true }))
 
-const counter = { red: 0, blue: 0 }
+// Trust proxy for accurate IP addresses
+app.set('trust proxy', true)
 
 // Create HTTP server
 const server = http.createServer(app)
 
-// Create WebSocket server
-const wss = new WebSocket.Server({ server })
+// Initialize WebSocket manager
+let wsManager
 
-// Store connected clients
-const clients = new Set()
-
-// WebSocket connection handling
-wss.on('connection', (ws) => {
-  console.log('New WebSocket client connected')
-  clients.add(ws)
-  
-  // Send current counter values to new client
-  ws.send(JSON.stringify({
-    type: 'counter_update',
-    data: counter
-  }))
-  
-  ws.on('close', () => {
-    console.log('WebSocket client disconnected')
-    clients.delete(ws)
-  })
-  
-  ws.on('error', (error) => {
-    console.error('WebSocket error:', error)
-    clients.delete(ws)
+// Welcome route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to the Red vs Blue API!',
+    version: '2.0.0',
+    endpoints: {
+      counters: '/api/counters',
+      red: '/api/red',
+      blue: '/api/blue',
+      stats: '/api/counters/stats',
+      health: '/api/health'
+    },
+    websocket: `ws://localhost:${port}`,
+    timestamp: new Date().toISOString()
   })
 })
 
-// Function to broadcast counter updates to all connected clients
-function broadcastCounterUpdate() {
-  const message = JSON.stringify({
-    type: 'counter_update',
-    data: counter,
-    timestamp: new Date().toISOString()
-  })
-  
-  clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message)
-    }
-  })
+// Store WebSocket manager reference for access in routes
+app.use((req, res, next) => {
+  req.wsManager = wsManager
+  req.app.set('connectedClients', wsManager ? wsManager.getConnectedClientsCount() : 0)
+  next()
+})
+
+// API routes
+app.use('/api', apiRoutes)
+
+// Error handling middleware
+app.use(notFound)
+app.use(errorHandler)
+
+/**
+ * Initialize application
+ */
+async function initializeApp() {
+  try {
+    console.log('🚀 Starting Red vs Blue API server...')
+    
+    // Connect to database
+    console.log('📦 Connecting to database...')
+    await dbConfig.connect()
+    
+    // Run database migrations
+    console.log('🔄 Running database migrations...')
+    const migrationManager = new MigrationManager()
+    await migrationManager.migrate()
+    
+    // Initialize WebSocket manager
+    console.log('🔌 Initializing WebSocket server...')
+    wsManager = new WebSocketManager(server)
+    
+    // Start server
+    server.listen(port, () => {
+      console.log('✅ Server initialization completed!')
+      console.log(`🌐 HTTP Server running at http://localhost:${port}`)
+      console.log(`🔌 WebSocket server running at ws://localhost:${port}`)
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`)
+      console.log(`💾 Database: Connected to PostgreSQL`)
+    })
+    
+  } catch (error) {
+    console.error('❌ Failed to initialize application:', error.message)
+    process.exit(1)
+  }
 }
 
-app.get('/', (req, res) => {
-  res.send('Welcome to the Red vs Blue API! Use /api/red or /api/blue to activate colors.')
+/**
+ * Handle graceful shutdown
+ */
+async function gracefulShutdown(signal) {
+  console.log(`\n🔄 Received ${signal}. Starting graceful shutdown...`)
+  
+  try {
+    // Stop accepting new connections
+    server.close(() => {
+      console.log('✅ HTTP server closed')
+    })
+    
+    // Close WebSocket connections
+    if (wsManager) {
+      await wsManager.shutdown()
+    }
+    
+    // Close database connection
+    await dbConfig.close()
+    
+    console.log('✅ Graceful shutdown completed')
+    process.exit(0)
+    
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error.message)
+    process.exit(1)
+  }
+}
+
+// Handle server errors
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${port} is already in use`)
+  } else {
+    console.error('❌ Server error:', err)
+  }
+  process.exit(1)
 })
 
-app.get('/api/status', (req, res) => {
-  res.json({
-    counters: counter,
-    connectedClients: clients.size,
-    timestamp: new Date().toISOString()
-  })
+// Handle process signals for graceful shutdown
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error)
+  gracefulShutdown('uncaughtException')
 })
 
-app.post('/api/red', (req, res) => {
-  console.log(req.body)
-  counter.red++
-  broadcastCounterUpdate()
-  res.send(`Red activated ${counter.red} times`)
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason)
+  gracefulShutdown('unhandledRejection')
 })
 
-app.post('/api/blue', (req, res) => {
-  console.log(req.body)
-  counter.blue++
-  broadcastCounterUpdate()
-  res.send(`Blue activated ${counter.blue} times`)
-})
-server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`)
-  console.log(`WebSocket server running at ws://localhost:${port}`)
-}).on('error', (err) => {
-  console.error('Server error:', err)
-})
+// Start the application
+initializeApp()
+
+// Broadcast counter updates when counters change
+function broadcastCounterUpdate() {
+  if (wsManager) {
+    wsManager.broadcastCounterUpdate()
+  }
+}
+
+// Export for testing
+module.exports = { app, server, initializeApp, broadcastCounterUpdate }

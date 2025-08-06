@@ -6,7 +6,30 @@
   "scripts": {
     "frontend": "cd apps/frontend && npx http-server -p 8080",
     "backend": "cd apps/backend && node index.js",
-    "start": "concurrently \"npm run frontend\" \"npm run backend\""
+    "backend:dev": "cd apps/backend && NODE_ENV=development node index.js",
+    "backend:prod": "cd apps/backend && NODE_ENV=production node index.js",
+    "db:init": "cd apps/backend && node scripts/init-db.js",
+    "db:init:dev": "cd apps/backend && NODE_ENV=development node scripts/init-db.js",
+    "db:init:prod": "cd apps/backend && NODE_ENV=production node scripts/init-db.js",
+    "db:start": "cd apps/backend && docker compose up postgres -d",
+    "db:stop": "cd apps/backend && docker compose down",
+    "db:reset": "cd apps/backend && docker compose down -v && docker compose up postgres -d",
+    "env:list": "cd apps/backend && node scripts/env-manager.js list",
+    "env:use:dev": "cd apps/backend && node scripts/env-manager.js use development",
+    "env:use:prod": "cd apps/backend && node scripts/env-manager.js use production",
+    "env:show:dev": "cd apps/backend && node scripts/env-manager.js show development",
+    "env:show:prod": "cd apps/backend && node scripts/env-manager.js show production",
+    "env:validate": "cd apps/backend && node scripts/env-manager.js validate",
+    "env:compare": "cd apps/backend && node scripts/env-compare.js",
+    "start": "concurrently \"npm run frontend\" \"npm run backend:dev\"",
+    "start:dev": "concurrently \"npm run frontend\" \"npm run backend:dev\"",
+    "start:prod": "concurrently \"npm run frontend\" \"npm run backend:prod\"",
+    "start:full": "npm run db:start && sleep 5 && npm run db:init:dev && npm run start:dev",
+    "docker:build": "cd apps/backend && docker compose build",
+    "docker:up": "cd apps/backend && docker compose up -d",
+    "docker:down": "cd apps/backend && docker compose down",
+    "docker:logs": "cd apps/backend && docker compose logs -f",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +37,12 @@
   "type": "commonjs",
   "dependencies": {
     "express": "^5.1.0",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "pg": "^8.11.3",
+    "pg-pool": "^3.6.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }

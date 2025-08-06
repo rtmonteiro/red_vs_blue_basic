@@ -1,20 +1,44 @@
-# Use official Node.js LTS image
-FROM node:20-alpine
+# Use Node.js 18 LTS Alpine image for smaller size
+FROM node:18-alpine
 
 # Set working directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Install system dependencies for PostgreSQL client
+RUN apk add --no-cache postgresql-client
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --production
+RUN npm ci --only=production && \
+    npm cache clean --force
 
-# Copy application source
+# Copy application code
 COPY . .
 
-# Expose port (default Express port)
+# Create logs directory
+RUN mkdir -p logs && chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port
 EXPOSE 3000
 
-# Start the app
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "const http = require('http'); \
+  const options = { hostname: 'localhost', port: 3000, path: '/api/health', timeout: 2000 }; \
+  const req = http.request(options, (res) => { \
+    if (res.statusCode === 200) process.exit(0); else process.exit(1); \
+  }); \
+  req.on('error', () => process.exit(1)); \
+  req.end();"
+
+# Start application
 CMD ["node", "index.js"]
