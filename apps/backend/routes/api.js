@@ -34,6 +34,9 @@ router.get('/status', generalRateLimit, counterController.getStatus)
  * @route   GET /api/counters
  * @desc    Get current counter values
  * @access  Public
+ * @example
+ * curl -X GET http://localhost:3000/api/counters
+ * @returns {Object} Current counters
  */
 router.get('/counters', generalRateLimit, counterController.getCounters)
 

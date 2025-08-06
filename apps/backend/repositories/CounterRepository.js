@@ -83,13 +83,7 @@ class CounterRepository {
         SET count = $1 
         WHERE color = $2
       `, [newCount, color])
-      
-      // Record history
-      await client.query(`
-        INSERT INTO counter_history 
-        (color, previous_count, new_count, increment_amount, client_info) 
-        VALUES ($1, $2, $3, $4, $5)
-      `, [color, previousCount, newCount, incrementBy, clientInfo])
+
       await dbConfig.commitTransaction(client)
       
       return {
