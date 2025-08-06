@@ -4,12 +4,179 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Red vs Blue</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .counters {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+        }
+        
+        .counter {
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 150px;
+        }
+        
+        .red-counter {
+            background-color: #ff6b6b;
+            color: white;
+        }
+        
+        .blue-counter {
+            background-color: #4ecdc4;
+            color: white;
+        }
+        
+        .counter h2 {
+            margin: 0;
+            font-size: 2em;
+        }
+        
+        .counter p {
+            margin: 5px 0 0 0;
+            font-size: 1.2em;
+        }
+        
+        .buttons {
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 15px 30px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        #red-btn {
+            background-color: #ff6b6b;
+            color: white;
+        }
+        
+        #blue-btn {
+            background-color: #4ecdc4;
+            color: white;
+        }
+        
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .config {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .config label {
+            display: block;
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+        }
+        
+        .config input, .config select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .config button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
 </head>
 <body>
-    <h1>Red vs Blue Game</h1>
-    <button id="red-btn">Red</button>
-    <button id="blue-btn">Blue</button>
-    <div id="result"></div>
+    <div class="container">
+        <h1>🔴 Red vs Blue Battle 🔵</h1>
+        
+        <div class="config">
+            <label for="environment">Environment:</label>
+            <select id="environment">
+                <option value="local">Local (localhost:3000)</option>
+                <option value="remote">Remote (Render)</option>
+            </select>
+            
+            <label for="api-url">API URL:</label>
+            <input type="text" id="api-url" value="http://localhost:3000/api" />
+            
+            <label for="ws-url">WebSocket URL:</label>
+            <input type="text" id="ws-url" value="ws://localhost:3000" />
+            
+            <button id="connect-btn">Connect WebSocket</button>
+        </div>
+        
+        <div class="status disconnected" id="status">
+            Disconnected - Click "Connect WebSocket" to start real-time updates
+        </div>
+        
+        <div class="counters">
+            <div class="counter red-counter">
+                <h2 id="red-count">0</h2>
+                <p>Red Votes</p>
+            </div>
+            <div class="counter blue-counter">
+                <h2 id="blue-count">0</h2>
+                <p>Blue Votes</p>
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <button id="red-btn">Vote Red</button>
+            <button id="blue-btn">Vote Blue</button>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
