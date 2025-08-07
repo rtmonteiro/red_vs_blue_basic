@@ -24,11 +24,14 @@ red_vs_blue_basic/
 ├── apps/
 │   ├── backend/
 │   │   ├── config/
-│   │   │   └── database.js           # Database configuration and connection pooling
+│   │   │   ├── database.js           # Database configuration and connection pooling
+│   │   │   └── swagger.js           # Swagger/OpenAPI documentation setup
 │   │   ├── controllers/
 │   │   │   └── CounterController.js  # HTTP request handlers
 │   │   ├── database/
 │   │   │   └── migrations.js         # Database schema migrations
+│   │   ├── docs/
+│   │   │   └── websocket.js         # WebSocket API documentation
 │   │   ├── middleware/
 │   │   │   └── errorHandler.js       # Error handling and rate limiting
 │   │   ├── repositories/
@@ -160,19 +163,53 @@ CREATE TABLE counter_history (
 
 ## 🌐 API Endpoints
 
+### 📚 Interactive API Documentation
+
+The API includes comprehensive Swagger/OpenAPI documentation with interactive testing capabilities:
+
+- **Swagger UI**: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+- **OpenAPI Spec**: [http://localhost:3000/api-docs.json](http://localhost:3000/api-docs.json)
+
+```bash
+# Open documentation in browser (macOS/Linux)
+npm run docs
+
+# Get raw OpenAPI specification
+npm run docs:json
+
+# Test all documented endpoints
+npm run test:api
+```
+
+### Testing & Integration
+
+- **🧪 Automated Tests**: Run `npm run test:api` to test all endpoints
+- **📮 Postman**: Import the OpenAPI spec at `/api-docs.json` into Postman
+- **🔧 Insomnia**: Import the OpenAPI spec for REST client testing
+- **⚡ curl Examples**: Every endpoint includes working curl examples
+
 ### Core Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check |
-| GET | `/api/status` | Application status |
-| GET | `/api/counters` | Get current counter values |
-| POST | `/api/red` | Increment red counter |
-| POST | `/api/blue` | Increment blue counter |
-| POST | `/api/counters/batch` | Batch increment counters |
-| GET | `/api/counters/stats` | Get statistics |
-| GET | `/api/counters/history` | Get counter history |
-| POST | `/api/counters/reset` | Reset all counters |
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|-------------|
+| GET | `/api/health` | Health check | None |
+| GET | `/api/status` | Application status | 100/15min |
+| GET | `/api/counters` | Get current counter values | 100/15min |
+| POST | `/api/red` | Increment red counter | 1000/sec |
+| POST | `/api/blue` | Increment blue counter | 1000/sec |
+| POST | `/api/counters/batch` | Batch increment counters | 1000/sec |
+| GET | `/api/counters/stats` | Get statistics | 100/15min |
+| GET | `/api/counters/history` | Get counter history | 100/15min |
+| POST | `/api/counters/reset` | Reset all counters | 5/hour |
+
+### API Features
+
+- **📖 Interactive Documentation**: Full Swagger UI with try-it-out functionality
+- **🔒 Rate Limiting**: Different limits for different endpoint types
+- **📊 Comprehensive Responses**: Detailed error messages and structured data
+- **⏱️ Request Validation**: Input validation with clear error messages
+- **🏷️ OpenAPI 3.0**: Industry-standard API specification
+- **🧪 Built-in Testing**: Test endpoints directly from the documentation
 
 ### Example API Usage
 
@@ -346,6 +383,11 @@ npm run docker:logs        # View logs
 # General
 npm run start              # Start frontend and backend (development mode)
 npm test                   # Run tests (placeholder)
+npm run test:api           # Test all Swagger-documented API endpoints
+
+# Documentation
+npm run docs               # Open API documentation in browser
+npm run docs:json          # Get raw OpenAPI specification
 ```
 
 ## 🔧 Configuration
@@ -441,6 +483,7 @@ npm run docker:down
 - ✅ PostgreSQL persistence with connection pooling
 - ✅ Real-time WebSocket communication
 - ✅ RESTful API with comprehensive error handling
+- ✅ Interactive Swagger/OpenAPI documentation
 - ✅ Database migrations and schema management
 - ✅ Counter history and analytics
 - ✅ Rate limiting and security middleware
@@ -448,13 +491,15 @@ npm run docker:down
 - ✅ Docker containerization
 - ✅ Graceful shutdown handling
 - ✅ Structured logging
+- ✅ Environment management system
 
 ### Enterprise Features
 
 - 🏗️ **Layered Architecture**: Repository, Service, Controller pattern
 - 🔄 **Database Transactions**: ACID compliance for counter operations
 - 📊 **Analytics**: Historical data tracking and insights
-- 🛡️ **Security**: Rate limiting, input validation, SQL injection protection
+- � **API Documentation**: Interactive Swagger/OpenAPI documentation with testing
+- �🛡️ **Security**: Rate limiting, input validation, SQL injection protection
 - 🔍 **Monitoring**: Health checks, error tracking, performance metrics
 - 🐳 **DevOps**: Docker, Docker Compose, production-ready containers
 - 📈 **Scalability**: Connection pooling, efficient queries, background processing
