@@ -20,6 +20,7 @@ const http = require('http')
 const dbConfig = require('./config/database')
 const MigrationManager = require('./database/migrations')
 const WebSocketManager = require('./websocket/WebSocketManager')
+const { setupSwagger } = require('./config/swagger')
 const apiRoutes = require('./routes/api')
 const { 
   errorHandler, 
@@ -68,12 +69,17 @@ app.get('/', (req, res) => {
       red: '/api/red',
       blue: '/api/blue',
       stats: '/api/counters/stats',
-      health: '/api/health'
+      health: '/api/health',
+      docs: '/api-docs'
     },
     websocket: `ws://localhost:${port}`,
+    documentation: `/api-docs`,
     timestamp: new Date().toISOString()
   })
 })
+
+// Setup Swagger documentation
+setupSwagger(app)
 
 // Store WebSocket manager reference for access in routes
 app.use((req, res, next) => {
